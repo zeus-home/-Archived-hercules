@@ -2,7 +2,7 @@
 #include <EEPROM.h>
 
 bool HerculesParams::isConfigured() {
-    bool isConfigured;
+    bool isConfigured = false;
     EEPROM.begin(512);
     EEPROM.get(0, isConfigured);
     EEPROM.end();

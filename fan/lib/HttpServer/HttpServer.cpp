@@ -17,47 +17,41 @@ HttpServer::HttpServer() {
 void HttpServer::handleRoot() {
     HerculesWireless wireless;
     Credentials cred = wireless.getCredentials();
-    this->webServer->send(200, "text/html", cred.toJSON());
+    webServer->send(200, "text/html", cred.toJSON());
 }
 
 void HttpServer::handleCredentials() {
     Credentials cred;
     HerculesWireless wireless;
-    String ssid = this->webServer->arg("ssid");
-    String psk  = this->webServer->arg("psk");
+    String ssid = webServer->arg("ssid");
+    String psk  = webServer->arg("psk");
     char* p_ssid = cred.ssid; 
     char* p_psk = cred.psk;
     ssid.toCharArray(p_ssid, 15);
     psk.toCharArray(p_psk, 15);
     wireless.putCredentials(cred);
-    this->webServer->send(200, "application/json", "{\"status\": \"200\"}");
+    webServer->send(200, "application/json", "{\"status\": \"200\"}");
 }
 
 void HttpServer::handleConfigComplete() {
     HerculesParams::setConfigured(true);
     Serial.print(HerculesParams::isConfigured());
-    this->webServer->send(200, "application/json", "{\"status\": \"200\"}");
+    webServer->send(200, "application/json", "{\"status\": \"200\"}");
     ESP.restart();
 }
 
 void HttpServer::handleNotFound() {
-    HerculesWireless wireless;
-    Credentials cred = {
-        "Tesseract",
-        "poseidon"
-    };
-    wireless.putCredentials(cred);
-    this->webServer->send(404, "text/html", "Error 404!");
+    webServer->send(404, "text/html", "Error 404!");
 }
 
 void HttpServer::begin() {
-    this->webServer->begin();
+    webServer->begin();
 }
 
 void HttpServer::close() {
-    this->webServer->close();
+    webServer->close();
 }
 
 void HttpServer::handleClient() {
-    this->webServer->handleClient();
+    webServer->handleClient();
 }

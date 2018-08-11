@@ -1,19 +1,31 @@
+#include <Arduino.h>
 #include <EEPROM.h>
-#include <HttpServer.h>
+#include <Hercules.h>
 #include <HerculesParams.h>
 #include <HerculesWireless.h>
-#include <ESP8266WiFi.h>
+#include <HttpServer.h>
+#include <Indicators.h>
+#include <MqttServer.h>
 
-HttpServer *http_server;
+
+int reset = D1;
+bool resetUnpressed = true;
+unsigned long startTime;
+unsigned long pressTime;
+
 HerculesWireless wireless;
+HttpServer *http_server;
+MqttServer *mqtt_server;
+
 bool isConfigured;
 
 #define AP_SSID "[Hercules]2934FCD34"
 #define AP_PASS "IrisConfig"
 
+void checkForResetButton();
+
 void setup() {
   Serial.begin(9600);
-  // HerculesParams::setConfigured(false);
   isConfigured = HerculesParams::isConfigured();
   if(!isConfigured) {
     wireless.initializeAP();
@@ -21,6 +33,7 @@ void setup() {
     http_server->begin();
   } else {
     wireless.initializeSTA();
+    mqtt_server = new MqttServer();
   }
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
@@ -35,13 +48,31 @@ void setup() {
 }
 
 void loop() {
+
+  checkForResetButton();
+
   if(!isConfigured) {
     http_server->handleClient();
   } else {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(1000);
+    mqtt_server->handleClient();
+    Indicators::blink_symmetric(LED_BUILTIN, 1000);
   }
 }
 
+void checkForResetButton() {
+  if(digitalRead(reset) == HIGH) {
+    if(resetUnpressed) {
+      startTime = millis();
+      resetUnpressed = false;
+    }
+    pressTime = millis()-startTime;
+    mqtt_server->sendMessage("Pressed");
+    if(pressTime > 10000) {
+      Hercules::restart();
+    } else {
+      return;
+    }
+  } else {
+    resetUnpressed = true;
+  }
+}
