@@ -15,9 +15,9 @@ void HerculesWireless::initializeAP() {
 }
 
 void HerculesWireless::initializeSTA() {
-    getCredentials();
+    Credentials cred = getCredentials();
     WiFi.mode(WIFI_STA);
-    WiFi.begin(STA_CRED.ssid, STA_CRED.psk);
+    WiFi.begin(cred.ssid, cred.psk);
     Serial.println("Connecting");
     while(!WiFi.isConnected()) {
         Serial.print(".");

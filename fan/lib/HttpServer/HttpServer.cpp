@@ -30,6 +30,7 @@ void HttpServer::handleCredentials() {
     ssid.toCharArray(p_ssid, 15);
     psk.toCharArray(p_psk, 15);
     wireless.putCredentials(cred);
+    Serial.println(cred.toJSON());
     webServer->send(200, "application/json", "{\"status\": \"200\"}");
 }
 
