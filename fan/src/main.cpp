@@ -7,7 +7,6 @@
 #include <Indicators.h>
 #include <MqttServer.h>
 
-
 int reset = D1;
 bool resetUnpressed = true;
 unsigned long startTime;
@@ -34,17 +33,18 @@ void setup() {
   } else {
     wireless.initializeSTA();
     mqtt_server = new MqttServer();
+    mqtt_server->connect();
+    mqtt_server->initialize();
   }
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-
+  Credentials cred = wireless.getCredentials();
+  Serial.println(cred.toJSON());
   if(isConfigured) {
       Serial.println("\nOperation Mode");
   } else {
       Serial.println("\nConfiguration Mode");
   }
-  Credentials cred = wireless.getCredentials();
-  Serial.println(cred.toJSON());
 }
 
 void loop() {

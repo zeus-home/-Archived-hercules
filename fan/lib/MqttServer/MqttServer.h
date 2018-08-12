@@ -20,6 +20,8 @@ class MqttServer {
 
     public:
         MqttServer();
+        void connect();
+        void initialize();
         void sendMessage(char*);
         void handleClient();
 };

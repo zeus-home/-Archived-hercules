@@ -6,7 +6,10 @@ MqttServer::MqttServer() {
     espClient = new WiFiClient();
     mqttClient = new PubSubClient(*espClient);
     mqttClient->setServer(MQTT_SERVER, MQTT_PORT);
-    mqttClient->setCallback([this] (char* topic, byte* payload, unsigned int length) { this->onMessage(topic, payload, length); });;
+    mqttClient->setCallback([this] (char* topic, byte* payload, unsigned int length) { this->onMessage(topic, payload, length); });
+}
+
+void MqttServer::connect() {
     Serial.println("Attempting connection to Tesseract...");
     while(!mqttClient->connected()) {
         if(mqttClient->connect("ESP_52F5B5")) {
@@ -16,6 +19,9 @@ MqttServer::MqttServer() {
             delay(1000);
         }
     }
+}
+
+void MqttServer::initialize() {
     mqttClient->subscribe(TOPIC_SUB);
     sendMessage("Good to be here");
 }
