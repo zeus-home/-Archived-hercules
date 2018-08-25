@@ -1,13 +1,16 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Hercules.h>
+#include <HerculesDriver.h>
 #include <HerculesParams.h>
 #include <HerculesWireless.h>
 #include <HttpServer.h>
 #include <Indicators.h>
 #include <MqttServer.h>
 
-int reset = D1;
+#define ZERO_CROSSING D2
+#define RESET D1
+
 bool resetUnpressed = true;
 unsigned long startTime;
 unsigned long pressTime;
@@ -25,52 +28,47 @@ void checkForResetButton();
 
 void setup() {
   Serial.begin(9600);
+  Indicators::init();
+  digitalWrite(LED_BUILTIN, LOW);
   isConfigured = HerculesParams::isConfigured();
   if(!isConfigured) {
     wireless.initializeAP();
     http_server = new HttpServer();
     http_server->begin();
+    Serial.println("\nConfiguration Mode\n");
   } else {
     wireless.initializeSTA();
     mqtt_server = new MqttServer();
     mqtt_server->connect();
     mqtt_server->initialize();
+    Serial.println("\nOperation Mode\n");
+    attachInterrupt(digitalPinToInterrupt(ZERO_CROSSING), HerculesDriver::interrupt, RISING);
   }
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
   Credentials cred = wireless.getCredentials();
   Serial.println(cred.toJSON());
-  if(isConfigured) {
-      Serial.println("\nOperation Mode");
-  } else {
-      Serial.println("\nConfiguration Mode");
-  }
 }
 
 void loop() {
-
   checkForResetButton();
-
   if(!isConfigured) {
     http_server->handleClient();
   } else {
     mqtt_server->handleClient();
+    HerculesDriver::handleDevices();
     Indicators::blink_symmetric(LED_BUILTIN, 1000);
   }
 }
 
 void checkForResetButton() {
-  if(digitalRead(reset) == HIGH) {
+  if(digitalRead(RESET) == HIGH) {
     if(resetUnpressed) {
       startTime = millis();
       resetUnpressed = false;
     }
-    pressTime = millis()-startTime;
+    pressTime = millis() - startTime;
     mqtt_server->sendMessage("Pressed");
     if(pressTime > 10000) {
       Hercules::restart();
-    } else {
-      return;
     }
   } else {
     resetUnpressed = true;
