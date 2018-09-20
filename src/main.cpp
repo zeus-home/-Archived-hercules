@@ -9,7 +9,7 @@
 #include <MqttServer.h>
 
 #define ZERO_CROSSING D2
-// #define RESET D1
+#define RESET D1
 
 bool resetUnpressed = true;
 unsigned long startTime;
