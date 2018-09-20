@@ -23,6 +23,7 @@ class MqttServer {
         void connect();
         void initialize();
         void sendMessage(char*);
+        void sendMessage(String);
         void handleClient();
 };
 

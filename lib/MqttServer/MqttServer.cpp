@@ -41,6 +41,14 @@ void MqttServer::sendMessage(char* payload) {
     mqttClient->publish(TOPIC_PUB, payload);
 }
 
+void MqttServer::sendMessage(String payload) {
+    char char_payload[25];
+    payload.toCharArray(char_payload, payload.length()+1);
+    Serial.print("Publishing: ");
+    Serial.println(char_payload);
+    mqttClient->publish(TOPIC_PUB, char_payload);
+}
+
 void MqttServer::handleClient() {
     mqttClient->loop();
 }

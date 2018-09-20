@@ -21,7 +21,6 @@ void Indicators::blink_symmetric(int led, int duration) {
             ledState = HIGH;
         }
         digitalWrite(LED_BUILTIN, ledState);
-
     }
 
     // digitalWrite(led, LOW);

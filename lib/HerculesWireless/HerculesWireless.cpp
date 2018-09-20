@@ -12,6 +12,7 @@ void HerculesWireless::initializeAP() {
     WiFi.mode(WIFI_AP);
     WiFi.softAPConfig(*apIP, *apIP, IPAddress(255, 255, 255, 0));
     WiFi.softAP(AP_SSID, AP_PSK);
+    WiFi.softAP("[Hercules]128373", "IrisConfig");
 }
 
 void HerculesWireless::initializeSTA() {
