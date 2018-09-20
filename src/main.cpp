@@ -24,7 +24,7 @@ bool isConfigured;
 #define AP_SSID "[Hercules]2934FCD34"
 #define AP_PASS "IrisConfig"
 
-// void checkForResetButton();
+void checkForResetButton();
 
 struct HerculesIdentifier {
   uint32_t chipId;
