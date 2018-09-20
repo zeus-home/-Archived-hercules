@@ -81,7 +81,7 @@ void checkForResetButton() {
       resetUnpressed = false;
     }
     pressTime = millis() - startTime;
-    mqtt_server->sendMessage("Pressed");
+    mqtt_server->sendMessage(String("Pressed"));
     if(pressTime > 10000) {
       Hercules::restart();
     }

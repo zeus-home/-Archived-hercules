@@ -23,7 +23,7 @@ void MqttServer::connect() {
 
 void MqttServer::initialize() {
     mqttClient->subscribe(TOPIC_SUB);
-    sendMessage("Good to be here");
+    sendMessage(String("Good to be here"));
 }
 
 void MqttServer::onMessage(char* topic, byte* payload, unsigned int length) {
