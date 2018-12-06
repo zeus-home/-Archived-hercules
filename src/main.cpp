@@ -1,91 +1,151 @@
 #include <Arduino.h>
-#include <EEPROM.h>
-#include <Hercules.h>
-#include <HerculesDriver.h>
-#include <HerculesParams.h>
-#include <HerculesWireless.h>
-#include <HttpServer.h>
-#include <Indicators.h>
-#include <MqttServer.h>
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 
-#define ZERO_CROSSING D2
-#define RESET D1
+unsigned long zeroTime = 0;
+int pulseWidth = 2;
+int light_state = 0;
+int fan_state = 0;
 
-bool resetUnpressed = true;
-unsigned long startTime;
-unsigned long pressTime;
+// WIFI SETTINGS
+#define WIFI_SSID "OnePlus 6"
+#define WIFI_PSK  "9821880713"
 
-HerculesWireless wireless;
-HttpServer *http_server;
-MqttServer *mqtt_server;
+// MQTT SETTINGS
+#define MQTT_SERVER "m15.cloudmqtt.com"
+#define MQTT_PORT 13902
+#define MQTT_USER "uglryohs"
+#define MQTT_PASS "JKJlnLuvBN31"
 
-bool isConfigured;
+#define TOPIC_LIGHT "hercules/sub/ESP_52F5B5/light"
+#define TOPIC_FAN "hercules/sub/ESP_52F5B5/fan"
+#define TOPIC_SWITCH "hercules/sub/ESP_52F5B5/switch"
+#define TOPIC_PUB "message"
 
-#define AP_SSID "[Hercules]2934FCD34"
-#define AP_PASS "IrisConfig"
+WiFiClient espClient;
+PubSubClient client(espClient);
 
-void checkForResetButton();
+const int LED = D4;
+const int Switch = D5;
+const int Fan = D6;
+const int Light = D7;
 
-struct HerculesIdentifier {
-  uint32_t chipId;
+int fireDelay(int firingAngle) { 
+  return (20*firingAngle)/360;
+}
 
-  String toJSON() {
-    String x = String("{\"chipId\": \"");
-    String z = String(chipId);
-    String y = String("\"}");
-    return x+z+y;
-  }
-
-} HerculesId;
-
+void toggle();
+void onMessage(char* topic, byte* payload, unsigned int length);
 
 void setup() {
   Serial.begin(9600);
-  HerculesId.chipId = ESP.getChipId();
-  Indicators::init();
-  digitalWrite(LED_BUILTIN, LOW);
-  isConfigured = HerculesParams::isConfigured();
-  if(!isConfigured) {
-    wireless.initializeAP();
-    http_server = new HttpServer();
-    http_server->begin();
-    Serial.println("\nConfiguration Mode\n");
-  } else {
-    wireless.initializeSTA();
-    mqtt_server = new MqttServer();
-    mqtt_server->connect();
-    mqtt_server->initialize();
-    mqtt_server->sendMessage(HerculesId.toJSON());
-    Serial.println("\nOperation Mode\n");
-    attachInterrupt(digitalPinToInterrupt(ZERO_CROSSING), HerculesDriver::interrupt, RISING);
+
+  pinMode(LED, OUTPUT);
+  pinMode(Light, OUTPUT);
+  pinMode(Fan, OUTPUT);
+  pinMode(Switch, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(D2), toggle, RISING);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PSK);
+  Serial.println("Connecting");
+  while(!WiFi.isConnected()) {
+      Serial.print(".");
+      delay(100);
   }
-  Credentials cred = wireless.getCredentials();
-  Serial.println(cred.toJSON());
+  Serial.println("\nConnected to WiFi Network");
+
+  client.setServer(MQTT_SERVER, MQTT_PORT);
+  client.setCallback(onMessage);
+
+  Serial.println("Attempting connection to Tesseract...");
+  while(!client.connected()) {
+      if(client.connect("ESP_52F5B5", MQTT_USER, MQTT_PASS)) {
+          Serial.println("\nConnected!");
+          client.subscribe(TOPIC_LIGHT);
+          client.subscribe(TOPIC_FAN);
+          client.subscribe(TOPIC_SWITCH);
+          client.publish(TOPIC_PUB, "Connection established");
+      } else {
+          Serial.print(".");
+          delay(1000);
+      }
+  }
+  digitalWrite(LED, LOW);
+  Serial.println("Connected");
+
 }
+
+int firingAngle_light = 0;
+int firingAngle_fan = 0;
+unsigned long currentTime;
 
 void loop() {
-  checkForResetButton();
-  if(!isConfigured) {
-    http_server->handleClient();
-  } else {
-    mqtt_server->handleClient();
-    HerculesDriver::handleDevices();
-    Indicators::blink_symmetric(LED_BUILTIN, 1000);
+  currentTime = millis();
+  int firingDelay_light = fireDelay(firingAngle_light);
+  if(currentTime - zeroTime < firingDelay_light) {
+    light_state = LOW;
+  } else if(currentTime - zeroTime >= firingDelay_light && currentTime - zeroTime < firingDelay_light + pulseWidth) {
+    light_state = HIGH;
+  } else if(currentTime - zeroTime >= firingDelay_light + pulseWidth) {
+    light_state = LOW;
   }
+  // Serial.println(x);
+  currentTime = millis();
+  int firingDelay_fan = fireDelay(firingAngle_fan);
+  if(currentTime - zeroTime < firingDelay_fan) {
+    fan_state = LOW;
+  } else if(currentTime - zeroTime >= firingDelay_fan && currentTime - zeroTime < firingDelay_fan + pulseWidth) {
+    fan_state = HIGH;
+  } else if(currentTime - zeroTime >= firingDelay_fan + pulseWidth) {
+    fan_state = LOW;
+  }
+
+  digitalWrite(Light, light_state);
+  digitalWrite(Fan, fan_state);
+
+  client.loop();
+  
+}
+void toggle() {
+  zeroTime = millis();
 }
 
-void checkForResetButton() {
-  if(digitalRead(RESET) == HIGH) {
-    if(resetUnpressed) {
-      startTime = millis();
-      resetUnpressed = false;
+void onMessage(char* topic, byte* payload, unsigned int length) {
+    
+    if(strcmp(topic,TOPIC_LIGHT)==0) {
+      if(payload[0] == 'o') {
+        if(payload[1] == 'f') {
+          digitalWrite(Light, 0x00);
+        }
+      } else {
+        int val = (int) payload[0] - 48;
+        firingAngle_light = val*30;
+      }
+      Serial.print("Firing light: ");
+      Serial.println(firingAngle_light);
     }
-    pressTime = millis() - startTime;
-    mqtt_server->sendMessage(String("Pressed"));
-    if(pressTime > 10000) {
-      Hercules::restart();
+
+    if(strcmp(topic,TOPIC_FAN)==0) {
+      if(payload[0] == 'o') {
+        if(payload[1] == 'f') {
+          digitalWrite(Fan, 0x00);
+        }
+      } else {
+        int val = (int) payload[0] - 48;
+        firingAngle_fan = val*30;
+      }
+      Serial.print("Firing fan: ");
+      Serial.println(firingAngle_fan);
     }
-  } else {
-    resetUnpressed = true;
-  }
+
+    if(strcmp(topic,TOPIC_SWITCH)==0) {
+      if(payload[0] == 'o') {
+        if(payload[1] == 'f') {
+          digitalWrite(Switch, 0x00);
+        } else {
+          digitalWrite(Switch, 0x01);
+        }
+      }
+    }
 }

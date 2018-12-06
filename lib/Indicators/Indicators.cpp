@@ -1,5 +1,4 @@
 #include "Indicators.h"
-
 #include <Arduino.h>
 
 unsigned long Indicators::previousMillis = 0;
@@ -9,22 +8,14 @@ void Indicators::init() {
     pinMode(LED_BUILTIN, OUTPUT);
 }
 
-void Indicators::blink_symmetric(int led, int duration) {
+void Indicators::blink_symmetric(uint8_t led, uint16_t period) {
 
+    int delay = period / 2;
     unsigned long currentMillis = millis();
 
-    if(currentMillis - previousMillis >= interval) {
+    if(currentMillis - previousMillis >= delay) {
         previousMillis = currentMillis;
-        if(ledState == HIGH) {
-            ledState = LOW;          
-        } else {
-            ledState = HIGH;
-        }
-        digitalWrite(LED_BUILTIN, ledState);
+        ledState = !ledState;
+        digitalWrite(led, ledState);
     }
-
-    // digitalWrite(led, LOW);
-    // delay(duration);
-    // digitalWrite(led, HIGH);
-    // delay(duration);
 }

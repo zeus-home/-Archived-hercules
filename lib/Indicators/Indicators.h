@@ -1,7 +1,9 @@
+#include <Arduino.h>
+
 #ifndef INDICATORS_H
 #define INDICATORS_H
 
-#define interval 1000 
+// #define interval 1000 
 
 class Indicators {
 
@@ -11,7 +13,7 @@ class Indicators {
     public:
         static void init();
         
-        static void blink_symmetric(int pin, int duration_milliseconds);
+        static void blink_symmetric(uint8_t pin, uint16_t period);
 
 };
 
