@@ -1,0 +1,48 @@
+* SpiceNetList
+* 
+* Exported from v1.sch at 04-12-2018 12:54 AM
+* 
+* EAGLE Version 9.2.2 Copyright (c) 1988-2018 Autodesk, Inc.
+* 
+.TEMP=25.0
+
+* --------- .OPTIONS ---------
+.OPTIONS ABSTOL=1e-12 GMIN=1e-12 PIVREL=1e-3 ITL1=100 ITL2=50 PIVTOL=1e-13 RELTOL=1e-3 VNTOL=1e-6 CHGTOL=1e-15 ITL4=10 METHOD=TRAP SRCSTEPS=0 TRTOL=7 NODE
+
+* --------- .PARAMS ---------
+
+* --------- devices ---------
+R_R1 N_1 N_2 1 
+V_V1 N_1 0 DC 0V AC 0 SIN(0 13V 50Hz 0 0) 
+R_R3 N_1 N_2 1 
+D_D1 N_2 0 1N4007 
+
+* --------- models ---------
+
+* model file: C:/Users/swana/OneDrive/Documents/EAGLE/spice/1N4007.mdl
+*1N4007 MCE 8-16-95
+*1000V 1A Si GenPurpose Diode pkg:DIODE0.4 1,2
+.MODEL 1N4007 D(IS=2.55E-9 RS=0.042 N=1.75 TT=5.76E-6 CJO=1.85E-11 
++ VJ=0.75 M=0.333 BV=1000 IBV=9.86E-5 )
+
+
+* --------- simulation ---------
+
+
+.control
+set filetype=ascii
+TRAN 0.02 10 0 0.02 
+write v1.sch.sim V(N_1) V(N_2) I(V_V1)
+.endc
+
+.END
+
+
+
+
+
+
+
+
+
+
